@@ -6,13 +6,17 @@ const io = std.io;
 const stdout = io.getStdOut().writer();
 const fs = std.fs;
 const fmt = std.fmt;
-const DEBUG = true;
+const DEBUG = false;
 
 const BUFF_SZ = 256;
 // const INPUT_FILE = "sample.txt";
 // const LINE_CAP = 5;
 const INPUT_FILE = "input.txt";
 const LINE_CAP = 1024;
+
+pub fn xor(c1: bool, c2: bool) bool {
+    return (c1 or c2) and !(c1 and c2);
+}
 
 const Policy = struct {
     min: usize,
@@ -33,23 +37,19 @@ const Policy = struct {
             if (policy.char == pc) n_occurance += 1;
         }
         if (n_occurance > policy.max or n_occurance < policy.min) {
-            if (DEBUG) try stdout.print("password: {s}, violates policy: {any}\n", .{ pass, policy });
+            if (DEBUG) try stdout.print("\x1b[1;31mERROR:\x1b[0m password: {s}, violates policy: {any}\n", .{ pass, policy });
             return false;
         } else return true;
     }
 
     pub fn checkPasswordUpdated(policy: @This(), pass: *[BUFF_SZ]u8) !bool {
-        var pass_sz: usize = mem.len(pass);
         var index_1: usize = policy.min - 1;
         var index_2: usize = policy.max - 1;
-        var size_cond: bool = !(index_1 > pass_sz or index_2 > pass_sz);
-        var char_cond_1: bool = policy.char == pass[index_1];
-        var char_cond_2: bool = policy.char == pass[index_2];
-        if (DEBUG and (!size_cond or !(char_cond_1 or char_cond_2))) {
-            if (!size_cond) try stdout.print("password: {s} is too small\n", .{pass});
-            if (!char_cond_2) try stdout.print("password: {s}, character mismatch: expected {c}, found {c}\n", .{ pass, policy.char, pass[index_2] });
-        }
-        return size_cond and (char_cond_1 or char_cond_2);
+        var char_1: bool = policy.char == pass[index_1];
+        var char_2: bool = policy.char == pass[index_2];
+        var cond: bool = xor(char_1, char_2);
+        if (DEBUG and !cond) try stdout.print("\x1b[1;31mERROR:\x1b[0m char @pos {d} ({c}) nor char @pos {d} ({c}) match specified policy char {c}\n", .{ index_1, pass[index_1], index_2, pass[index_2], policy.char });
+        return cond;
     }
 };
 
@@ -87,7 +87,7 @@ pub fn part1() !void {
         if (!valid_pass) continue;
         n_valid += 1;
     }
-    try stdout.print("\x1b[1;33mpart1:\x1b[0m {d}", .{n_valid});
+    try stdout.print("\x1b[1;33mpart1:\x1b[0m {d}\n", .{n_valid});
 }
 
 pub fn part2() !void {
@@ -102,10 +102,10 @@ pub fn part2() !void {
         if (!valid_pass) continue;
         n_valid += 1;
     }
-    try stdout.print("\x1b[1;33mpart2:\x1b[0m {d}", .{n_valid});
+    try stdout.print("\x1b[1;33mpart2:\x1b[0m {d}\n", .{n_valid});
 }
 
 pub fn main() !void {
-    // try part1();
+    try part1();
     try part2();
 }
